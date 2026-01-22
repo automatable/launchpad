@@ -1,0 +1,11 @@
+{
+  "name": "Automatable",
+  "short_name": "Automatable",
+  "icons": [
+    { "src": "/static/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/static/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "theme_color": "#d40000",
+  "background_color": "#222222",
+  "display": "standalone"
+}

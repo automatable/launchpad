@@ -1,5 +1,6 @@
+from django.conf import settings
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.views.generic import TemplateView
 
 from .views import custom_404, health_check
@@ -9,5 +10,8 @@ urlpatterns = [
     path("health/", health_check, name="health_check"),
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [path("__reload__/", include("django_browser_reload.urls"))]
 
 handler404 = custom_404

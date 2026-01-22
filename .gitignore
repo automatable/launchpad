@@ -44,3 +44,7 @@ htmlcov/
 
 # Cache
 .cache/
+
+# Node.js (favicon generator)
+node_modules/
+package-lock.json

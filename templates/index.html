@@ -5,14 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automatable - AI-Powered Business Automation</title>
     {% load static %}
+    {% load django_browser_reload %}
+    <link rel="icon" href="{% static 'favicon.ico' %}" sizes="32x32">
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'site.webmanifest' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <main>
         <section class="hero">
+            <div class="logo-container">
+                <img src="{% static 'images/logo.png' %}" alt="Automatable Logo" class="logo">
+            </div>
             <h1>Automatable</h1>
             <p>AI-Powered Business Automation Solutions</p>
         </section>
     </main>
+    {% django_browser_reload_script %}
 </body>
 </html>
