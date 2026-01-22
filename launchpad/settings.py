@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "launchpad.middleware.HealthCheckMiddleware",  # Must be first - bypasses ALLOWED_HOSTS for probes
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

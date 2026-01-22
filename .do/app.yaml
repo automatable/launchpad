@@ -32,7 +32,7 @@ services:
         type: SECRET
       - key: DJANGO_ALLOWED_HOSTS
         scope: RUN_TIME
-        value: ".automatable.agency,localhost"
+        value: ".automatable.agency,.ondigitalocean.app,localhost"
       - key: DEBUG
         scope: RUN_TIME
         value: "False"
