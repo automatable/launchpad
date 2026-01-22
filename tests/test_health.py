@@ -4,7 +4,7 @@ import pytest
 from django.http import Http404
 from django.test import Client, RequestFactory
 
-from launchpad.middleware import HealthCheckMiddleware
+from automatable_website.middleware import HealthCheckMiddleware
 
 
 class TestHomePage:

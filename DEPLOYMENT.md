@@ -247,7 +247,7 @@ doctl apps create-deployment <APP_ID> --force-rebuild
 This section documents how the deployment infrastructure was originally set up. You shouldn't need this for day-to-day operations.
 
 ### Prerequisites
-- GitHub repository: `automatable/launchpad`
+- GitHub repository: `automatable/automatable-website`
 - DigitalOcean account with App Platform access
 - `doctl` CLI authenticated
 
