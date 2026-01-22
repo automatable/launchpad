@@ -1,7 +1,8 @@
-"""Health check views for monitoring and deployment validation."""
+"""Views for health checks and error handling."""
 
 from django.db import connection
 from django.http import JsonResponse
+from django.shortcuts import redirect
 
 
 def health_check(request):
@@ -32,3 +33,8 @@ def health_check(request):
         return JsonResponse(health, status=500)
 
     return JsonResponse(health)
+
+
+def custom_404(request, exception):
+    """Redirect all 404s to the home page."""
+    return redirect("home")
