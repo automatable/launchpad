@@ -106,6 +106,8 @@ gh pr create --base main --title "Release: my new feature"
 gh pr merge --squash
 ```
 
+> **Note:** This step is manual because GitHub Actions cannot create PRs without enterprise features or a Personal Access Token.
+
 ### 8. Verify Production
 Visit https://automatable.agency to confirm the deployment.
 
