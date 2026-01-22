@@ -27,17 +27,17 @@ CURRENT_BRANCH=$(git branch --show-current)
 PR_STATE=$(gh pr view --json state --jq '.state' 2>/dev/null || echo "NONE")
 ```
 
-### 2. Handle merged PR (sync staging with main)
+### 2. Handle merged PR (reset staging to main)
 
-If PR state is `MERGED`, sync staging with main to prevent the "compare" banner:
+If PR state is `MERGED`, or if main has commits staging doesn't have, reset staging to match main exactly. This prevents the GitHub "compare" banner that appears after squash merges:
 
 ```bash
-git fetch origin main
-git merge origin/main --no-edit
-git push origin staging
+git fetch origin
+git reset --hard origin/main
+git push origin staging --force
 ```
 
-Then report: "Synced staging with main after merge. Ready for new changes!"
+Then report: "Reset staging to match main. Ready for new changes!"
 
 **Skip to end** - no need to create a new PR.
 
