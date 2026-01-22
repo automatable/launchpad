@@ -1,0 +1,53 @@
+name: Auto-Promote to Main
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [staging]
+
+jobs:
+  promote:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for commit log
+
+      - name: Check for existing PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_EXISTS=$(gh pr list --base main --head staging --json number --jq 'length')
+          echo "pr_exists=$PR_EXISTS" >> "$GITHUB_OUTPUT"
+
+      - name: Create promotion PR
+        if: steps.check.outputs.pr_exists == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Write title to file (avoids shell injection from commit messages)
+          git log -1 --format="%s" origin/staging > /tmp/pr_title.txt
+
+          # Write body to file
+          {
+            echo "## Changes"
+            git log origin/main..origin/staging --oneline
+            echo ""
+            echo "---"
+            echo "*Auto-generated promotion from staging*"
+          } > /tmp/pr_body.txt
+
+          # Read title safely without shell expansion
+          read -r PR_TITLE < /tmp/pr_title.txt
+
+          # Create PR using file for body, sanitized variable for title
+          gh pr create --base main --head staging \
+            --title "$PR_TITLE" \
+            --body-file /tmp/pr_body.txt
