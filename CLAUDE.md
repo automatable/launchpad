@@ -122,9 +122,14 @@ doctl apps update 8abcf726-f441-47ac-ad0c-602ece882683 --spec .do/app-testing.ya
 
 ### Important Notes
 
-1. **SECRET_KEY Management**: When updating the app spec via `doctl`, SECRET_KEY values marked as `type: SECRET` get cleared unless you include the encrypted `EV[1:...]` value. Either:
-   - Get current spec first with `doctl apps spec get` to preserve the encrypted value
-   - Or re-set the secret after updating
+1. **SECRET_KEY Management**: When updating the app spec via `doctl`, SECRET_KEY values marked as `type: SECRET` get cleared. To fix this, generate and set a new key:
+   ```bash
+   # Generate a new SECRET_KEY and update the app spec
+   APP_ID="<app-id>"
+   SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
+   doctl apps update $APP_ID --spec <(doctl apps spec get $APP_ID | sed "s/type: SECRET$/value: \"$SECRET_KEY\"/")
+   ```
+   See [DEPLOYMENT.md](DEPLOYMENT.md) for full details.
 
 2. **ALLOWED_HOSTS**: Uses `.automatable.agency` (with leading dot) to match both apex and subdomains. The health check middleware bypasses this for internal probes.
 
