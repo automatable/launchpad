@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Pre-push hook: Prompt before pushing to protected branches
+#
+# This hook prevents accidental pushes to main by requiring confirmation.
+
+# Protected branches that require confirmation
+PROTECTED_BRANCHES="main master"
+
+# Get the remote and URL
+remote="$1"
+url="$2"
+
+# Read the refs being pushed
+while read local_ref local_sha remote_ref remote_sha; do
+    # Extract branch name from ref
+    branch=$(echo "$remote_ref" | sed 's|refs/heads/||')
+
+    # Check if this is a protected branch
+    for protected in $PROTECTED_BRANCHES; do
+        if [ "$branch" = "$protected" ]; then
+            echo ""
+            echo "⚠️  You're about to push directly to '$branch'"
+            echo ""
+            echo "This branch is protected. The recommended workflow is:"
+            echo "  1. Push to staging first"
+            echo "  2. Create a PR from staging to main"
+            echo ""
+
+            # Check if we're in an interactive terminal
+            if [ -t 0 ]; then
+                read -p "Are you sure you want to push to $branch? (yes/no): " confirm
+                if [ "$confirm" != "yes" ]; then
+                    echo "Push cancelled."
+                    exit 1
+                fi
+                echo "Proceeding with push to $branch..."
+            else
+                echo "Non-interactive shell detected. To push to $branch, run:"
+                echo "  git push $remote $branch --no-verify"
+                echo ""
+                echo "Push cancelled."
+                exit 1
+            fi
+        fi
+    done
+done
+
+exit 0
