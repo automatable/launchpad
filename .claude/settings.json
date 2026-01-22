@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "session-start": [
+    "SessionStart": [
       {
         "command": "./scripts/install-hooks.sh",
         "description": "Install git hooks for branch protection"
