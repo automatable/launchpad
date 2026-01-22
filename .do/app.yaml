@@ -1,5 +1,10 @@
 name: automatable-launchpad
 region: lon
+domains:
+  - domain: automatable.agency
+    type: PRIMARY
+  - domain: www.automatable.agency
+    type: ALIAS
 services:
   - name: web
     github:
@@ -20,7 +25,7 @@ services:
         type: SECRET
       - key: DJANGO_ALLOWED_HOSTS
         scope: RUN_TIME
-        value: "${APP_DOMAIN}"
+        value: "${APP_DOMAIN},automatable.agency,www.automatable.agency"
       - key: DEBUG
         scope: RUN_TIME
         value: "False"
