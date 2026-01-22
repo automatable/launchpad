@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install git hooks for the launchpad repository
+# Install git hooks for the automatable-website repository
 #
 # These hooks help prevent accidental commits/pushes to protected branches.
 

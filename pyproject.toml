@@ -1,5 +1,5 @@
 [project]
-name = "launchpad"
+name = "automatable-website"
 version = "0.1.0"
 description = "Automatable Launch Pad - AI-powered business automation landing page"
 readme = "README.md"
@@ -20,5 +20,5 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "launchpad.settings"
+DJANGO_SETTINGS_MODULE = "automatable_website.settings"
 python_files = ["test_*.py", "*_test.py"]

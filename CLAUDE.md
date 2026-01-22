@@ -10,8 +10,8 @@ When you start a Claude Code session, git hooks are automatically installed via 
 ### Manual Setup
 ```bash
 # Clone the repo (checks out staging by default)
-git clone https://github.com/automatable/launchpad.git
-cd launchpad
+git clone https://github.com/automatable/automatable-website.git
+cd automatable-website
 
 # Install git hooks (prevents accidental commits to main)
 ./scripts/install-hooks.sh
@@ -70,8 +70,8 @@ pytest
 ## Architecture
 
 ```
-launchpad/
-├── launchpad/              # Django project
+automatable-website/
+├── automatable_website/    # Django project
 │   ├── settings.py         # Configuration (uses env vars)
 │   ├── urls.py             # URL routing
 │   ├── views.py            # Health check view (fallback)

@@ -31,7 +31,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "launchpad.middleware.HealthCheckMiddleware",  # Must be first - bypasses ALLOWED_HOSTS for probes
+    "automatable_website.middleware.HealthCheckMiddleware",  # Must be first - bypasses ALLOWED_HOSTS for probes
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -42,7 +42,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "launchpad.urls"
+ROOT_URLCONF = "automatable_website.urls"
 
 TEMPLATES = [
     {
@@ -60,7 +60,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "launchpad.wsgi.application"
+WSGI_APPLICATION = "automatable_website.wsgi.application"
 
 # Database - uses DATABASE_URL env var on App Platform
 DATABASE_URL = os.environ.get("DATABASE_URL")
