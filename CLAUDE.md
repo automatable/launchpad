@@ -55,14 +55,37 @@ launchpad/
 │   └── wsgi.py             # WSGI entry point
 ├── templates/              # HTML templates
 ├── static/                 # Static assets (CSS, JS, images)
-├── .do/app.yaml            # DigitalOcean App Platform config
+├── tests/                  # Pytest test suite
+├── .github/workflows/      # GitHub Actions CI
+├── .do/app.yaml            # Production app config
+├── .do/app-testing.yaml    # Testing app config
 └── manage.py               # Django CLI
 ```
 
-## Deployment
+## Deployment Workflow
+
+### Branch Strategy
+| Branch | Deploys To | URL |
+|--------|------------|-----|
+| `main` | Production | https://automatable.agency |
+| `staging` | Testing | https://automatable-website-testing-b2m3s.ondigitalocean.app |
+
+### Workflow
+```
+feature/* → PR to staging → CI tests → merge → auto-deploy to testing
+                                                      ↓
+                                               manual testing
+                                                      ↓
+                         PR from staging to main → merge → auto-deploy to production
+```
+
+### CI Pipeline
+GitHub Actions runs on PRs and pushes to `main` and `staging`:
+- `python manage.py check --deploy` (Django deployment checks)
+- `pytest` (test suite)
 
 ### Auto-Deploy
-App Platform auto-deploys on every push to `main`. Configuration in `.do/app.yaml`.
+App Platform auto-deploys on every push. Configuration in `.do/app.yaml` (production) and `.do/app-testing.yaml` (testing).
 
 ### Environment Variables
 | Variable | Scope | Description |
@@ -80,23 +103,21 @@ App Platform auto-deploys on every push to `main`. Configuration in `.do/app.yam
 
 ### doctl Commands
 ```bash
-# Check deployment status
+# Production app (16c55ee6-8e1d-4036-a26f-ba5d4130eb9e)
 doctl apps list-deployments 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
-
-# View logs
 doctl apps logs 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
-
-# View build logs
 doctl apps logs 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --type build
-
-# Force rebuild
 doctl apps create-deployment 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --force-rebuild
-
-# Get current spec
 doctl apps spec get 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
-
-# Update app spec (preserves SECRET_KEY if using encrypted value)
 doctl apps update 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --spec .do/app.yaml
+
+# Testing app (8abcf726-f441-47ac-ad0c-602ece882683)
+doctl apps list-deployments 8abcf726-f441-47ac-ad0c-602ece882683
+doctl apps logs 8abcf726-f441-47ac-ad0c-602ece882683
+doctl apps logs 8abcf726-f441-47ac-ad0c-602ece882683 --type build
+doctl apps create-deployment 8abcf726-f441-47ac-ad0c-602ece882683 --force-rebuild
+doctl apps spec get 8abcf726-f441-47ac-ad0c-602ece882683
+doctl apps update 8abcf726-f441-47ac-ad0c-602ece882683 --spec .do/app-testing.yaml
 ```
 
 ### Important Notes
@@ -111,8 +132,19 @@ doctl apps update 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --spec .do/app.yaml
 
 ## DigitalOcean Resources
 
+### Production App
 - **App ID**: `16c55ee6-8e1d-4036-a26f-ba5d4130eb9e`
-- **App Name**: `automatable-launchpad`
-- **Project**: Automatable
+- **App Name**: `automatable-website-production`
+- **Branch**: `main`
+- **URL**: https://automatable.agency
+
+### Testing App
+- **App ID**: `8abcf726-f441-47ac-ad0c-602ece882683`
+- **App Name**: `automatable-website-testing`
+- **Branch**: `staging`
+- **URL**: https://automatable-website-testing-b2m3s.ondigitalocean.app
+
+### Common
+- **Project**: Automatable (`f7e22f1b-d2e8-4e06-8bc8-02212e9365f6`)
 - **Region**: London (lon)
 - **Instance**: `apps-s-1vcpu-0.5gb`
