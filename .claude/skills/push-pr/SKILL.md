@@ -63,6 +63,9 @@ gh pr list --base main --head staging --state open --json number --jq 'length'
 gh pr create --base main --head staging \
   --title "$(git log -1 --format='%s')" \
   --body "$(cat <<'BODY'
+## Preview
+🔗 **Staging**: https://automatable-website-testing-b2m3s.ondigitalocean.app
+
 ## Changes
 $(git log origin/main..origin/staging --oneline)
 
