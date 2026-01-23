@@ -45,6 +45,7 @@ MIDDLEWARE = [
 
 if DEBUG:
     MIDDLEWARE += ["django_browser_reload.middleware.BrowserReloadMiddleware"]
+    X_FRAME_OPTIONS = "ALLOWALL"  # Allow VS Code Simple Browser iframe embedding
 
 ROOT_URLCONF = "automatable_website.urls"
 
