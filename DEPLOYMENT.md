@@ -17,28 +17,25 @@ This document details the deployment process for the Automatable website.
 | Environment | Branch | App Name | URL |
 |-------------|--------|----------|-----|
 | **Production** | `main` | `automatable-website-production` | https://automatable.agency |
-| **Testing** | `staging` | `automatable-website-testing` | https://automatable-website-testing-b2m3s.ondigitalocean.app |
+| **Preview** | PR branches | Ephemeral apps | `*.ondigitalocean.app` |
 
-Both apps run on DigitalOcean App Platform in the London region.
+Production runs on DigitalOcean App Platform in the London region. Preview apps are created automatically for each PR and deleted when the PR is closed.
 
 ### App IDs
 ```
 Production: 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
-Testing:    8abcf726-f441-47ac-ad0c-602ece882683
+Preview:    Created dynamically per PR
 ```
 
 ### Branch Protection
 
-The repository is configured to enforce the staging-first workflow:
-
 | Branch | Default | Protection |
 |--------|---------|------------|
-| `staging` | ✅ Yes | None (accepts direct pushes and PRs) |
-| `main` | No | Requires PR + CI must pass |
+| `main` | ✅ Yes | Requires PR + CI must pass |
 
 **What this means:**
-- `git clone` checks out `staging` by default
-- New PRs target `staging` by default
+- `git clone` checks out `main` by default
+- New PRs target `main` by default
 - Direct pushes to `main` are blocked
 - PRs to `main` require the CI workflow to pass
 
@@ -62,8 +59,8 @@ To bypass in emergencies: `git commit --no-verify` or `git push --no-verify`
 
 ### 1. Create a Feature Branch
 ```bash
-git checkout staging
-git pull origin staging
+git checkout main
+git pull origin main
 git checkout -b feature/my-new-feature
 ```
 
@@ -76,51 +73,42 @@ python manage.py runserver
 pytest -v
 ```
 
-### 3. Push and Create PR to Staging
+### 3. Push and Create PR to Main
 ```bash
 git push -u origin feature/my-new-feature
 gh pr create --title "Add my new feature"
-# Note: PRs target staging by default (no --base needed)
 ```
 
-### 4. CI Runs Automatically
+Or use the `/push-pr` skill in Claude Code for a streamlined workflow.
+
+### 4. CI Runs + Preview Deploys
 GitHub Actions will:
-- Run `python manage.py check --deploy`
-- Run `pytest`
+- Run CI checks (`python manage.py check --deploy` and `pytest`)
+- Deploy an ephemeral preview app
+- Post the preview URL as a PR comment (usually takes 2-3 minutes)
 
-### 5. Merge to Staging
-After CI passes and PR is approved:
+### 5. Verify on Preview
+Click the preview URL in the PR comments to verify your changes in a production-like environment.
+
+### 6. Merge to Production
+After CI passes, preview is verified, and PR is approved:
 ```bash
 gh pr merge --squash
 ```
 
-### 6. Verify on Testing Site
-Visit https://automatable-website-testing-b2m3s.ondigitalocean.app to verify changes.
+The preview app is automatically deleted and production is deployed.
 
-### 7. Promote to Production
-```bash
-git checkout staging
-git pull
-gh pr create --base main --title "Release: my new feature"
-# After approval:
-gh pr merge --squash
-```
-
-> **Note:** This step is manual because GitHub Actions cannot create PRs without enterprise features or a Personal Access Token.
-
-### 8. Verify Production
+### 7. Verify Production
 Visit https://automatable.agency to confirm the deployment.
 
 ---
 
 ## CI/CD Pipeline
 
-### GitHub Actions (`.github/workflows/ci.yml`)
-Runs on:
-- Pull requests to `main` or `staging`
-- Pushes to `main` or `staging`
+### GitHub Actions
 
-Steps:
+**CI Workflow (`.github/workflows/ci.yml`)**
+Runs on all PRs and pushes to `main`:
 1. Checkout code
 2. Set up Python 3.12
 3. Install dependencies
@@ -128,8 +116,17 @@ Steps:
 5. Collect static files
 6. Run pytest
 
+**Preview Deploy (`.github/workflows/preview-deploy.yml`)**
+Runs when a PR is opened/updated:
+1. Deploy ephemeral preview app to DigitalOcean
+2. Post preview URL as PR comment
+
+**Preview Cleanup (`.github/workflows/preview-cleanup.yml`)**
+Runs when a PR is closed:
+1. Delete the preview app
+
 ### DigitalOcean Auto-Deploy
-Both apps have `deploy_on_push: true`, so merges to their respective branches trigger automatic deployments.
+Production has `deploy_on_push: true`, so merges to `main` trigger automatic deployments.
 
 ---
 
@@ -140,8 +137,8 @@ Both apps have `deploy_on_push: true`, so merges to their respective branches tr
 # Production
 doctl apps list-deployments 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
 
-# Testing
-doctl apps list-deployments 8abcf726-f441-47ac-ad0c-602ece882683
+# List all apps (to find preview apps)
+doctl apps list
 ```
 
 ### View Logs
@@ -165,9 +162,6 @@ doctl apps create-deployment <APP_ID> --force-rebuild
 ```bash
 # Production
 doctl apps update 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --spec .do/app.yaml
-
-# Testing
-doctl apps update 8abcf726-f441-47ac-ad0c-602ece882683 --spec .do/app-staging.yaml
 ```
 
 > **Warning**: This clears the `DJANGO_SECRET_KEY`. See [Fixing SECRET_KEY](#fixing-secret_key-after-spec-update) below.
@@ -191,7 +185,7 @@ When you update an app spec via `doctl`, environment variables marked as `type: 
 **To fix:**
 ```bash
 # Set the app ID
-APP_ID="16c55ee6-8e1d-4036-a26f-ba5d4130eb9e"  # or testing app ID
+APP_ID="16c55ee6-8e1d-4036-a26f-ba5d4130eb9e"  # Production app ID
 
 # Generate a new secure key and update the spec in one command
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
@@ -252,20 +246,11 @@ This section documents how the deployment infrastructure was originally set up. 
 - GitHub repository: `automatable/automatable-website`
 - DigitalOcean account with App Platform access
 - `doctl` CLI authenticated
+- GitHub repo admin access (for secrets)
 
 ### Create Production App
 ```bash
 doctl apps create --spec .do/app.yaml --wait
-```
-
-### Create Testing App
-```bash
-# Ensure staging branch exists first
-git checkout -b staging
-git push -u origin staging
-
-# Create the app
-doctl apps create --spec .do/app-staging.yaml --wait
 ```
 
 ### Assign to Project
@@ -274,13 +259,21 @@ doctl projects resources assign f7e22f1b-d2e8-4e06-8bc8-02212e9365f6 \
   --resource=do:app:<NEW_APP_ID>
 ```
 
-### Set SECRET_KEY for Both Apps
+### Set SECRET_KEY
 ```bash
-# For each app
 APP_ID="<app-id>"
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
 doctl apps update $APP_ID --spec <(doctl apps spec get $APP_ID | sed "s/type: SECRET$/value: \"$SECRET_KEY\"/")
 ```
+
+### Configure GitHub Secret for Preview Apps
+1. Generate a DigitalOcean API token at https://cloud.digitalocean.com/account/api/tokens
+2. Give it Read/Write access to App Platform
+3. Add it as a GitHub repository secret named `DIGITALOCEAN_ACCESS_TOKEN`:
+   - Go to repo Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `DIGITALOCEAN_ACCESS_TOKEN`
+   - Value: Your DigitalOcean API token
 
 ### Configure Custom Domain (Production Only)
 1. Add domain in DigitalOcean App Platform settings
@@ -298,5 +291,5 @@ doctl apps update $APP_ID --spec <(doctl apps spec get $APP_ID | sed "s/type: SE
 | `DJANGO_SECRET_KEY` | RUN_AND_BUILD_TIME | Django secret key (required) |
 | `DJANGO_ALLOWED_HOSTS` | RUN_TIME | Comma-separated allowed hosts |
 | `DEBUG` | RUN_TIME | `True` or `False` |
-| `ENVIRONMENT` | RUN_TIME | `production` or `staging` |
+| `ENVIRONMENT` | RUN_TIME | `production` or `preview` |
 | `DATABASE_URL` | RUN_TIME | Database connection string (optional) |

@@ -1,12 +1,12 @@
 ---
 name: push-pr
-description: Push to staging, auto-create PR, and sync after merge
-version: 2.0.0
+description: Push branch and create PR to main with automatic preview deployment
+version: 3.0.0
 ---
 
 # Push with Auto-PR
 
-Push local commits to staging, automatically create/update a PR to main, and sync after merge.
+Push local commits and create/update a PR to main. A preview app will be automatically deployed when the PR is created.
 
 ## Usage
 
@@ -20,73 +20,64 @@ When the user invokes `/push-pr`:
 
 ### 1. Check current state
 
-First, check if we're on staging and if there's an existing PR:
+First, verify we're not on main and check for existing PR:
 
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
-PR_STATE=$(gh pr view --json state --jq '.state' 2>/dev/null || echo "NONE")
+
+# Abort if on main
+if [ "$CURRENT_BRANCH" = "main" ]; then
+    echo "ERROR: Cannot push-pr from main branch"
+    exit 1
+fi
+
+# Check for existing PR
+PR_URL=$(gh pr view --json url --jq '.url' 2>/dev/null || echo "")
 ```
 
-### 2. Handle merged PR (sync staging with main)
-
-If PR state is `MERGED`, sync staging with main:
-
-```bash
-git fetch origin main
-git merge origin/main --no-edit
-git push origin staging
-```
-
-Then report: "Synced staging with main after merge. Ready for new changes!"
-
-**Skip to end** - no need to create a new PR.
-
-### 3. Push local changes
+### 2. Push local changes
 
 If there are commits to push:
 
 ```bash
-git push origin staging
+git push -u origin "$CURRENT_BRANCH"
 ```
 
 Report which commits were pushed.
 
-### 4. Create or report PR
+### 3. Create or report PR
 
-**Check for existing open PR**:
-```bash
-gh pr list --base main --head staging --state open --json number --jq 'length'
-```
+**If no PR exists**, create one:
 
-**If no open PR exists**, create one:
 ```bash
-gh pr create --base main --head staging \
+gh pr create --base main \
   --title "$(git log -1 --format='%s')" \
   --body "$(cat <<'BODY'
 ## Changes
-$(git log origin/main..origin/staging --oneline)
+$(git log origin/main..HEAD --oneline)
 
 ## Test plan
-- [ ] Verify staging site: https://staging.automatable.agency
+- [ ] Verify preview app (URL will be posted in comments after deploy)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 BODY
 )"
 ```
 
-**If PR already exists**, report its URL:
+**If PR already exists**, report its URL and mention the preview will update:
+
 ```bash
 gh pr view --json url --jq '.url'
 ```
 
-### 5. Remind about post-merge sync
+### 4. Remind about preview
 
 After reporting the PR, remind the user:
 
-> "After merging, run `/push-pr` again to sync staging with main."
+> "A preview app will be deployed automatically. Watch the PR comments for the preview URL (usually takes 2-3 minutes)."
 
 ## Safety
 
 - Never use `--force` unless explicitly requested
-- Only operates on the staging branch
-- Sync operation uses `--no-edit` to avoid interactive prompts
+- Refuses to run from main branch
+- Always sets upstream tracking with `-u`

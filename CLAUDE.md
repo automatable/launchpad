@@ -9,11 +9,11 @@ When you start a Claude Code session, git hooks are automatically installed via 
 
 ### Manual Setup
 ```bash
-# Clone the repo (checks out staging by default)
+# Clone the repo
 git clone https://github.com/automatable/automatable-website.git
 cd automatable-website
 
-# Install git hooks (prevents accidental commits to main)
+# Install git hooks (prompts before committing to main)
 ./scripts/install-hooks.sh
 
 # Create virtual environment
@@ -81,7 +81,7 @@ automatable-website/
 ├── static/                 # Static assets (CSS, JS, images)
 ├── tests/                  # Pytest test suite
 ├── .do/app.yaml            # Production app config
-├── .do/app-staging.yaml    # Staging app config
+├── .do/app-preview.yaml    # PR preview app config
 └── manage.py               # Django CLI
 ```
 
@@ -91,19 +91,16 @@ automatable-website/
 | Branch | Deploys To | URL |
 |--------|------------|-----|
 | `main` | Production | https://automatable.agency |
-| `staging` | Staging | https://staging.automatable.agency |
+| PR branches | Preview apps | `*.ondigitalocean.app` (ephemeral) |
 
 ### Workflow
 ```
-feature/* → PR to staging → merge → auto-deploy to staging
-                                           ↓
-                                    verify on staging
-                                           ↓
-              PR from staging to main → merge → auto-deploy to production
+feature/* branch → PR to main → preview app created → verify → merge → preview deleted, deploys to production
 ```
 
 ### Auto-Deploy
-App Platform auto-deploys on every push. Configuration in `.do/app.yaml` (production) and `.do/app-staging.yaml` (staging).
+- **Production**: App Platform auto-deploys on push to `main`. Config in `.do/app.yaml`.
+- **Preview apps**: GitHub Actions automatically deploy ephemeral preview apps for each PR. The preview URL is posted as a PR comment. Preview apps are deleted when the PR is merged or closed.
 
 ### Environment Variables
 | Variable | Scope | Description |
@@ -129,13 +126,8 @@ doctl apps create-deployment 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --force-rebuil
 doctl apps spec get 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
 doctl apps update 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e --spec .do/app.yaml
 
-# Staging app (8abcf726-f441-47ac-ad0c-602ece882683)
-doctl apps list-deployments 8abcf726-f441-47ac-ad0c-602ece882683
-doctl apps logs 8abcf726-f441-47ac-ad0c-602ece882683
-doctl apps logs 8abcf726-f441-47ac-ad0c-602ece882683 --type build
-doctl apps create-deployment 8abcf726-f441-47ac-ad0c-602ece882683 --force-rebuild
-doctl apps spec get 8abcf726-f441-47ac-ad0c-602ece882683
-doctl apps update 8abcf726-f441-47ac-ad0c-602ece882683 --spec .do/app-staging.yaml
+# List all apps (to find preview apps)
+doctl apps list
 ```
 
 ### Important Notes
@@ -161,11 +153,8 @@ doctl apps update 8abcf726-f441-47ac-ad0c-602ece882683 --spec .do/app-staging.ya
 - **Branch**: `main`
 - **URL**: https://automatable.agency
 
-### Staging App
-- **App ID**: `8abcf726-f441-47ac-ad0c-602ece882683`
-- **App Name**: `automatable-website-staging`
-- **Branch**: `staging`
-- **URL**: https://staging.automatable.agency
+### Preview Apps
+Preview apps are created automatically by GitHub Actions when PRs are opened. They are ephemeral and deleted when the PR is closed.
 
 ### Common
 - **Project**: Automatable (`f7e22f1b-d2e8-4e06-8bc8-02212e9365f6`)
