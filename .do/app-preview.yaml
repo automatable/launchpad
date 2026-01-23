@@ -24,7 +24,7 @@ services:
     envs:
       - key: DJANGO_SECRET_KEY
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
+        value: "preview-app-ephemeral-key-not-for-production-use"
       - key: DJANGO_ALLOWED_HOSTS
         scope: RUN_TIME
         value: ".ondigitalocean.app,localhost"
