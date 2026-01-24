@@ -41,20 +41,6 @@ Preview:    Created dynamically per PR
 - Direct pushes to `main` are blocked
 - PRs to `main` require the CI workflow to pass
 
-### Local Git Hooks (Recommended)
-
-Install local hooks to get prompted before accidentally committing to `main`:
-
-```bash
-./scripts/install-hooks.sh
-```
-
-This installs:
-- **pre-commit**: Prompts before committing while on `main`
-- **pre-push**: Prompts before pushing to `main`
-
-To bypass in emergencies: `git commit --no-verify` or `git push --no-verify`
-
 ---
 
 ## Day-to-Day Development Workflow

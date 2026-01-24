@@ -4,17 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Setup
 
-### Automatic (Claude Code)
-When you start a Claude Code session, git hooks are automatically installed via the session-start hook.
-
-### Manual Setup
 ```bash
 # Clone the repo
 git clone https://github.com/automatable/automatable-website.git
 cd automatable-website
-
-# Install git hooks (prompts before committing to main)
-./scripts/install-hooks.sh
 
 # Create virtual environment
 python -m venv .venv && source .venv/bin/activate
