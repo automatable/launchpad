@@ -9,6 +9,8 @@ This document details the deployment process for the Automatable website.
 - [Manual Deployment Operations](#manual-deployment-operations)
 - [Troubleshooting](#troubleshooting)
 - [Initial Setup (Reference)](#initial-setup-reference)
+- [Environment Variables Reference](#environment-variables-reference)
+- [Database Strategy](#database-strategy)
 
 ---
 
@@ -291,3 +293,141 @@ doctl apps update $APP_ID --spec <(doctl apps spec get $APP_ID | sed "s/type: SE
 | `DEBUG` | RUN_TIME | `True` or `False` |
 | `ENVIRONMENT` | RUN_TIME | `production` or `preview` |
 | `DATABASE_URL` | RUN_TIME | Database connection string (optional) |
+
+---
+
+## Database Strategy
+
+### Current Setup
+
+| Environment | Database | Persistence |
+|-------------|----------|-------------|
+| **Local dev** | SQLite | Local file |
+| **Preview apps** | SQLite | Ephemeral (in-container) |
+| **Production** | Ready for PostgreSQL | `DATABASE_URL` not set yet |
+
+The app is configured to use `DATABASE_URL` when available (via `dj-database-url`), falling back to SQLite. This means you can add a database when needed without code changes.
+
+### PostgreSQL vs MySQL
+
+**PostgreSQL is recommended for Django projects.**
+
+| Feature | PostgreSQL | MySQL |
+|---------|------------|-------|
+| Django support | First-class, most tested | Good, but secondary |
+| JSONField | Native, excellent | Requires 5.7+, less mature |
+| ArrayField | ✅ Native support | ❌ Not available |
+| Full-text search | Built-in, powerful | Basic |
+| Range fields | ✅ Native (dates, integers) | ❌ Not available |
+| DO Managed DB | ✅ ~$15/mo (1GB) | ✅ ~$15/mo (1GB) |
+
+### When to Add a Database
+
+Add an external database when you need:
+- User accounts / authentication
+- Contact form submissions stored in DB
+- Admin dashboard with persistent data
+- Any data that must survive container restarts
+
+### Architecture Options
+
+#### Option A: SQLite for Previews, PostgreSQL for Production (Recommended)
+
+```
+Production  ──────► PostgreSQL (Managed)
+Preview     ──────► SQLite (ephemeral, no persistence needed)
+Local dev   ──────► SQLite
+```
+
+**Pros**: Simple, cost-effective, previews are free
+**Cons**: Can't test PostgreSQL-specific features in preview
+
+#### Option B: Shared Dev Database for Previews
+
+```
+Production  ──────► PostgreSQL (Production DB)
+Preview     ──────► PostgreSQL (Dev DB - shared across all previews)
+Local dev   ──────► SQLite or Dev DB
+```
+
+**Pros**: Tests migrations before production, consistent behavior
+**Cons**: Extra cost (~$15/mo), previews share state
+
+### Migration Workflow
+
+Migrations run automatically during build:
+```yaml
+build_command: |
+  pip install -r requirements.txt
+  python manage.py collectstatic --noinput
+  python manage.py migrate --noinput  # Runs BEFORE app starts
+```
+
+**Safe migration process:**
+1. Write migration locally (`makemigrations`)
+2. Test on local SQLite
+3. Push PR → Preview app tests migration
+4. Merge → Production runs migration automatically
+
+**For destructive migrations** (dropping columns, etc.):
+- Back up first: `doctl databases backups list <db-id>`
+- Consider manual migration approval instead of auto-deploy
+
+### Implementation Steps (When Ready)
+
+#### 1. Create DigitalOcean Managed Database
+
+```bash
+doctl databases create automatable-db \
+  --engine pg \
+  --region lon \
+  --size db-s-1vcpu-1gb \
+  --num-nodes 1
+```
+
+#### 2. Attach to Production App
+
+Update `.do/app.yaml`:
+```yaml
+databases:
+  - name: db
+    engine: PG
+    production: true
+```
+
+Or reference an existing cluster:
+```yaml
+databases:
+  - name: db
+    engine: PG
+    cluster_name: automatable-db
+```
+
+#### 3. Verify Connection
+
+```bash
+# Check DATABASE_URL is set
+doctl apps spec get 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e | grep DATABASE
+
+# View runtime logs for connection issues
+doctl apps logs 16c55ee6-8e1d-4036-a26f-ba5d4130eb9e
+```
+
+### Database Commands Reference
+
+```bash
+# List databases
+doctl databases list
+
+# Get connection details
+doctl databases connection <db-id>
+
+# List backups
+doctl databases backups list <db-id>
+
+# Create manual backup (if supported by your plan)
+doctl databases backups create <db-id>
+
+# Connect via psql (requires DATABASE_URL)
+doctl databases connection <db-id> --format connection_string
+```

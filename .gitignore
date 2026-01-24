@@ -48,3 +48,5 @@ htmlcov/
 # Node.js (favicon generator)
 node_modules/
 package-lock.json
+.django-port
+.dev-redirect.html

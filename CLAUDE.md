@@ -139,7 +139,7 @@ doctl apps list
    SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
    doctl apps update $APP_ID --spec <(doctl apps spec get $APP_ID | sed "s/type: SECRET$/value: \"$SECRET_KEY\"/")
    ```
-   See [DEPLOYMENT.md](DEPLOYMENT.md) for full details.
+   See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for full details.
 
 2. **ALLOWED_HOSTS**: Uses `.automatable.agency` (with leading dot) to match both apex and subdomains. The health check middleware bypasses this for internal probes.
 

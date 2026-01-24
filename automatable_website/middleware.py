@@ -1,17 +1,18 @@
 """Custom middleware for health checks and monitoring."""
 
+from django.conf import settings
 from django.http import Http404, JsonResponse
 
 
 class HealthCheckMiddleware:
     """
-    Middleware that responds to health check requests from internal probes only.
+    Middleware that responds to health check requests.
 
-    Only responds to:
-    - Kubernetes probes (User-Agent: kube-probe/*)
-    - Internal network requests (10.x.x.x IPs)
+    Access control:
+    - DEBUG mode: Always accessible (for local testing)
+    - Production: Only responds to internal probes (kube-probe User-Agent or 10.x.x.x IPs)
 
-    Public requests to /health/ get a 404.
+    Public requests in production get a 404, making the endpoint invisible.
     """
 
     def __init__(self, get_response):
@@ -19,7 +20,9 @@ class HealthCheckMiddleware:
 
     def __call__(self, request):
         if request.path == "/health/":
-            if self._is_internal_probe(request):
+            # In DEBUG mode, always allow access for local testing
+            # In production, only respond to internal probes
+            if settings.DEBUG or self._is_internal_probe(request):
                 return JsonResponse({"status": "healthy"})
             # Return 404 for public requests - makes endpoint invisible
             raise Http404()
