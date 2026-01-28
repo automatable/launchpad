@@ -3,7 +3,7 @@ name: Preview Deploy
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -12,6 +12,7 @@ permissions:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'preview')
     steps:
       - uses: actions/checkout@v4
 

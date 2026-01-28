@@ -9,7 +9,39 @@ jobs:
   cleanup-preview:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete preview app
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Find and delete preview app
+        run: |
+          echo "Looking for preview apps to delete..."
+
+          # List all apps and find preview ones (name starts with automatable-website but not production/staging)
+          # Preview apps are named like: automatable-website-XXXXXXXX
+          PREVIEW_APPS=$(doctl apps list --format ID,Spec.Name --no-header | grep "automatable-website" | grep -v "automatable-website-production$" | grep -v "automatable-website-staging$" || true)
+
+          if [ -z "$PREVIEW_APPS" ]; then
+            echo "No preview apps found to delete"
+            exit 0
+          fi
+
+          echo "Found preview apps:"
+          echo "$PREVIEW_APPS"
+
+          # Delete each preview app
+          echo "$PREVIEW_APPS" | while read -r line; do
+            APP_ID=$(echo "$line" | awk '{print $1}')
+            APP_NAME=$(echo "$line" | awk '{print $2}')
+            if [ -n "$APP_ID" ]; then
+              echo "Deleting $APP_NAME ($APP_ID)..."
+              doctl apps delete "$APP_ID" --force
+              echo "✓ Deleted"
+            fi
+          done
+
+      - name: Fallback delete via app_action
         uses: digitalocean/app_action/delete@v2
         with:
           from_pr_preview: "true"
